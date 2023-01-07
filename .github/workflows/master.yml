@@ -1,0 +1,67 @@
+name: master deployment
+
+on:
+  push:
+    branches:
+      - master
+  pullRequest:
+    branches:
+      - master
+      
+jobs:
+  
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: get files
+        uses: action/checkout@v3
+    
+      - name: Add nodejs
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+       
+      - name: Run tests
+        run: npm run test
+        
+      - name: Slack Notification
+        uses: act10ns/slack@v1.5.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          channel: '#ci-cd'
+        if: always()
+        
+          
+   deploy:  
+      runs-on: ubuntu-latest
+      
+      steps:
+        - name: get files
+          uses: action/checkout@v3
+    
+        - name: Add nodejs
+          uses: actions/setup-node@v3
+          with:
+            node-version: 16
+          
+        - name: build app
+          run: npm run build
+            
+        - name: Deploy to AWS amplify
+          uses: luisgreen/amplify_deployment@main
+          appId: 
+          branchName: master
+          artifactPath: ./dist
+          region: us-east-1
+          
+        - name: Slack Notification
+          uses: act10ns/slack@v1.5.0
+          with:
+            status: ${{ job.status }}
+            steps: ${{ toJson(steps) }}
+            channel: '#ci-cd'
+          if: always()
+        
+      
